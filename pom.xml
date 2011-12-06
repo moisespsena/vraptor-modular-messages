@@ -1,0 +1,71 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
+	<groupId>com.moisespsena.vraptor</groupId>
+	<artifactId>vraptor-modular-messages</artifactId>
+	<version>1.0</version>
+	<packaging>pom</packaging>
+	<name>VRaptor Modular Messages</name>
+	<url>http://moisespsena.com</url>
+	<description>ResourceBundle para aplições modulares baseadas no VRaptor</description>
+        <organization>
+                <name>moisespsena</name>
+                <url>http://moisespsena.com</url>
+        </organization>
+        <developers>
+		<developer>
+			<id>moisespsena</id>
+			<name>Moises P. Sena</name>
+			<email>moisespsena@gmail.com</email>
+			<organization>moisespsena.com</organization>
+			<organizationUrl>http://www.moisespsena.com</organizationUrl>
+			<roles>
+				<role>developer</role>
+			</roles>
+			<timezone>-3</timezone>
+		 </developer>
+	</developers>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>2.0-beta-9</version>
+			</plugin>
+		</plugins>
+	</build>
+	<licenses>
+		<license>
+			<distribution>repo</distribution>
+			<name>Apache License, Version 2.0</name>
+			<url>http://apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+	<distributionManagement>
+		<repository>
+			<id>releases</id>
+			<url>http://mvn-nexus:8081/nexus/content/repositories/releases</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>Internal Snapshots</name>
+			<url>http://mvn-nexus:8081/nexus/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<modules>
+		<module>vraptor-modular-messages-api</module>
+	</modules>
+	<scm>
+		<url>http://github.com/moisespsena/vraptor-modular-messages</url>
+		<connection>scm:git:git://github.com/moisespsena/vraptor-modular-messages</connection>
+		<developerConnection>scm:git:git@github.com:moisespsena/vraptor-modular-messages.git</developerConnection>
+	</scm>
+</project>

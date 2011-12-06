@@ -1,0 +1,228 @@
+#!/usr/bin/php -q
+<?php
+
+ini_set("display_errors", true);
+error_reporting(E_ALL);
+
+define('PROJECT_DIR', realpath(dirname($_SERVER['argv'][0])));
+define('PROJECT_COMMAND', "mvn clean compile");
+define('PROJECT_CLEAN_REPOSITORY', false);
+
+$PROJECT_DIR = PROJECT_DIR;
+$PROJECT_COMMAND = PROJECT_COMMAND;
+echo <<<EOF
+===============================================================================
+ | Run '$PROJECT_COMMAND'
+ | 	in $PROJECT_DIR
+ |														    
+ | @author Moises P. Sena <moisespsena@gmail.com>
+===============================================================================
+
+EOF;
+
+class Main {
+	public function __construct() {
+		$pomFile = PROJECT_DIR . '/pom.xml';
+                $xml = simplexml_load_file($pomFile);
+
+                if(!empty($xml->parent)) {
+                        $xml->groupId = $xml->parent->groupId;
+                        $xml->version = $xml->parent->version;
+                }
+
+                $artifactId = trim((string) $xml->artifactId);
+                $groupId = trim((string) $xml->groupId);
+                $version = trim((string) $xml->version);
+
+                if(PROJECT_CLEAN_REPOSITORY) {
+                        $paths = array();
+                        $this->getPaths($xml, PROJECT_DIR, $paths);
+
+                        foreach ($paths as $path) {
+                                $path = escapeshellarg($path);
+
+                                Logger::info("Clean MVN cache repository ({$path})");
+                                Shell::exec("rm -vrf $path", false);
+                        }
+                }
+                
+                $projectDir = escapeshellarg(PROJECT_DIR);
+
+                Shell::exec("cd $projectDir && " . PROJECT_COMMAND);
+	}
+
+	private function getRepoPath($xml) {
+                 if(!empty($xml->parent)) {
+                         $xml->groupId = $xml->parent->groupId;
+                         $xml->version = $xml->parent->version;
+                 }       
+                 
+                 $artifactId = trim((string) $xml->artifactId);
+                 $groupId = trim((string) $xml->groupId);
+                 $version = trim((string) $xml->version);
+          
+                 $path = $_SERVER['HOME'] . "/.m2/repository/"
+                         . str_replace(".", "/", $groupId)
+                         . "/{$artifactId}/{$version}";
+
+                 return $path;
+        }
+
+        private function getPaths($xml, $base, &$paths) {
+                $paths[] = $this->getRepoPath($xml);
+
+                if(!empty($xml->modules)) {
+                        foreach($xml->modules->module as $m) {
+                                $path = "{$base}/{$m}";
+
+                                if(is_dir($path)) {
+                                        $xmlModule = simplexml_load_file($path . "/pom.xml");
+                                        $this->getPaths($xmlModule, $path, $paths);
+                                }
+                        }
+                }
+        }
+}
+
+class Shell {
+	const BUF_SIZ  = 1024;	// max buffer size
+	const FD_WRITE = 0;		// stdin
+	const FD_READ  = 1;		// stdout
+	const FD_ERR   = 2;		// stderr
+
+	private static $lastError;
+
+	public static function printOut($msg, $error = false) {
+		if($error) {
+			fwrite(STDERR, $msg);
+		}
+		else {
+			fwrite(STDOUT, $msg);
+		}
+	}
+
+
+	private static function procExec($cmd, $outcall = null) {
+		self::$lastError = "";
+		
+		if($outcall == null) {
+			$outcall = function($msg) {
+				Shell::printOut($msg);
+			};
+		}
+		
+		$descriptorspec = array(	  
+			0 => array("pipe", "r"),
+			1 => array("pipe", "w"),
+			2 => array("pipe", "w")
+		);
+    
+		$first_exitcode = 0;
+    
+		$ptr = proc_open($cmd, $descriptorspec, $pipes, NULL, $_ENV);
+    
+		if (!is_resource($ptr)) {
+			return false;
+		}
+    
+		$errbuf = "";
+
+		while (($buffer = fgets($pipes[self::FD_READ], self::BUF_SIZ)) != NULL
+			|| ($errbuf = fgets($pipes[self::FD_ERR], self::BUF_SIZ)) != NULL) {		    
+			if (!isset($flag)) {
+				$pstatus = proc_get_status($ptr);
+				$first_exitcode = $pstatus["exitcode"];
+	  			$flag = true;
+    		}
+    		
+    		if (strlen($buffer)) {
+				$outcall($buffer);
+			}
+			
+			if (strlen ( $errbuf )) {
+				self::$lastError .= $errbuf;
+			}
+	    }
+	
+		foreach ($pipes as $pipe) {
+			fclose($pipe);
+		}
+    
+		/* Get the expected *exit* code to return the value */
+		$pstatus = proc_get_status($ptr);
+
+		if (!strlen($pstatus["exitcode"]) || $pstatus["running"]) {
+			/* we can trust the retval of proc_close() */
+			if ($pstatus["running"]) {
+				proc_terminate($ptr);
+			}
+			$ret = proc_close($ptr);
+		} else {
+			if ((($first_exitcode + 256) % 256) == 255
+				&& (($pstatus["exitcode"] + 256) % 256) != 255) {
+		    		$ret = $pstatus["exitcode"];
+			}
+			elseif (!strlen($first_exitcode)) {
+				$ret = $pstatus["exitcode"];
+			}
+			elseif ((($first_exitcode + 256) % 256) != 255) {
+				$ret = $first_exitcode;
+			}
+			else {
+				$ret = 0; /* we "deduce" an EXIT_SUCCESS ;) */			
+			}
+			proc_close($ptr);
+		}
+    
+		return ($ret + 256) % 256;
+	}
+
+	public static function getEnv() {
+		$env = `env`;
+		$env = preg_replace("/^([^=]+)=([^\n]+)\n/msi", "export $1='$2'\n", $env) . "\n";
+		return $env;
+	}
+		
+	public static function exec($cmd, $exit = true, $outcall = null) {
+		$cmd = self::getEnv () . "\n" . $cmd;
+		$ret = self::procExec ( $cmd, $outcall );
+		
+		if ($ret === false) {
+			Logger::error ( "not enough FD or out of memory.", $exit );
+		} elseif ($ret == 127) {
+			Logger::error ( "Command not found (returned by sh).", $exit, $ret );
+		} else if ($ret) {
+			Logger::error ( "Command failed: $cmd" );
+			
+			if (! empty ( self::$lastError )) {
+				Logger::error ( str_repeat ( "-", 60 ) );
+				Logger::error ( "Error Message:" );
+				Logger::error ( trim ( self::$lastError ) );
+				Logger::error ( str_repeat ( "-", 60 ) );
+			}
+			
+			if ($exit) {
+				Logger::error ( "Abort operation" );
+				exit ( $ret );
+			}
+		}
+	}
+}
+
+class Logger {
+	public static function help() {
+		$cmd = $_SERVER ['argv'] [0];
+	}
+	public static function error($msg, $exit = false, $code = 1) {
+		Shell::printOut("[ERROR]: $msg\n", true);
+
+		if($exit) {
+			exit ( $code );
+		}
+	}
+	public static function info($msg) {
+		Shell::printOut("[INFO]: $msg\n");
+	}
+}
+
+new Main();

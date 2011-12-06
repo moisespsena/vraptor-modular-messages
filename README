@@ -1,0 +1,66 @@
++-----------------------------------------------------------------------------+
+|                       VRaptor Modular Messages                              |
+|                                                                             |
+|   Author: Moises P. Sena <http://moisespsena.com>                           |
+|                                                                             |
+|   VRaptor Modular Messages e' um plugin pra o Framework WEB VRaptor da      |
+|   Caelum (http://vraptor.caelum.com.br) que adiciona recursos de            |
+|   ResourceBundle para aplicacoes modulares baseadas no plugin               | 
+|   vraptor-modular-api.                                                       |
++-----------------------------------------------------------------------------+
+
+Para usar os componentes deste plugin na sua aplicacao WEB, basta adicionar
+o .JAR deste projeto no diretorio WEB-INF/libs ou, caso use o Maven, adicione
+este projeto como dependencia do seu.
+
+Nao e' necessario nenhuma configuracao adicional no seu WEB-INF/web.xml.
+
++-----------------------------------------------------------------------------+
+
+A) Checkout Project and Submit Changes
+
+	1) Download and install Git
+	2) Configure your user:
+		
+		$ git config --global user.name <Your Username>
+		$ git config --global user.email <Your Email>
+	             
+	3) Repository checkout:
+	
+		$ mkdir vraptor-modular-messages
+		$ cd vraptor-modular-messages
+		$ git init
+		$ git remote add github git@github.com:moisespsena/vraptor-modular-messages.git
+		$ git fetch github
+
+		$ git branch dev
+		$ git checkout dev
+	
+	4) Your changes
+	5) Commit changes:
+	
+		$ git commit -m 'Message'
+	
+	6) Merge your changed in branch 'dev' to 'master'
+
+		$ git checkout master
+		$ git pull . dev
+
+	7) Commit on remote repository:
+	
+		$ git push -u github master
+	
+	More Info:
+	+-------------------------------------------------------------------------------------------------------+		
+	| NOTE: http://codexico.com.br/blog/linux/tutorial-simples-como-usar-o-git-e-o-github                   |
+	|       http://www.frustrado.com.br/main/index.php/Programa%C3%A7%C3%A3o_n%C3%A3o_linear_utilizando_Git |
+	+-------------------------------------------------------------------------------------------------------+
+	
+B) Configure your development enviroment
+
+	1) Install JDK
+	2) Download Apache Maven
+	3) Download Sonatype Nexus
+	4) Configure Apache Maven in Sonatype Nexus
+	5) Configure your Hosts resolver (*nix = /etc/hosts, Win = C:\Windows\System 32\drivers\etc\hosts)
+	6) Deploy project in local Sonatype Nexus
